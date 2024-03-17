@@ -12,10 +12,10 @@ data = pd.read_csv("archive/breed_traits.csv")
 
 # Definining columns
 numerical_cols = ['Affectionate With Family', 'Good With Young Children', 'Good With Other Dogs',
-                  'Shedding Level', 'Coat Grooming Frequency', 'Drooling Level',
+                  'Shedding Level', 'Coat Grooming Frequency', 'Drooling Level', 'Coat Type', 'Coat Length',
                   'Openness To Strangers', 'Playfulness Level', 'Watchdog/Protective Nature',
                   'Adaptability Level', 'Trainability Level', 'Energy Level', 'Barking Level',
-                  'Mental Stimulation Needs', 'Coat Type', 'Coat Length']
+                  'Mental Stimulation Needs']
 
 # Create a preprocessor
 preprocessor = ColumnTransformer(
