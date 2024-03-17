@@ -22,10 +22,43 @@ preprocessor = ColumnTransformer(
     transformers=[
         ('num', StandardScaler(), numerical_cols)])
 
+
+# Looking for the best number of clusters using silhouette score
+# The best silhouette score and the number of clusters will be printed
+# And later on be used to define the pipeline
+best_score = -1
+best_num_cl = 2
+
+for num_cl in range(2, 190):
+    # Define the pipeline with preprocessor and KMeans model
+    pipeline = Pipeline(steps=[('preprocessor', preprocessor),
+                               ('kmeans', KMeans(n_clusters=num_cl, random_state=42))])
+
+    # Fit the pipeline to the data
+    pipeline.fit(data)
+
+    # Predict the cluster labels
+    labels = pipeline.predict(data)
+
+    # Adding the cluster labels to the DataFrame
+    data['Cluster'] = labels
+
+    # Calculating the silhouette score
+    silhouette_avg = silhouette_score(data[numerical_cols], labels)
+    print("Silhouette Score:", silhouette_avg, "Clusters:", num_cl)
+
+    if silhouette_avg > best_score:
+        best_score = silhouette_avg
+        best_num_cl = num_cl
+
+
+print("Best silhouette score:", best_score, "Best number of clusters:", best_num_cl)
+
+
 # Define the pipeline with preprocessor and KMeans model
-# Tested with different number of clusters, 2 seems to be the best based on silhouette score
+# Picking the best number of clusters from the previous step
 pipeline = Pipeline(steps=[('preprocessor', preprocessor),
-                           ('kmeans', KMeans(n_clusters=2, random_state=42))])
+                           ('kmeans', KMeans(n_clusters=best_num_cl, random_state=42))])
 
 # Fit the pipeline to the data
 pipeline.fit(data)
