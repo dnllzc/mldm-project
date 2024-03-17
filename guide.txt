@@ -1,0 +1,16 @@
+Coat Type:
+Smooth - 1
+Double - 2
+Curly - 3
+Wavy - 4
+Wiry - 5
+Silky - 6
+Rough - 7
+Hairless - 8
+Corded - 9
+
+
+Coat Length:
+Short - 1
+Medium - 2
+Long - 3
