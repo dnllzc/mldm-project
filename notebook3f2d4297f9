@@ -1,1 +1,741 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.10.13","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"none","dataSources":[{"sourceId":6518380,"sourceType":"datasetVersion","datasetId":3768171}],"dockerImageVersionId":30698,"isInternetEnabled":false,"language":"python","sourceType":"notebook","isGpuEnabled":false}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# All imports\nimport pandas as pd\nfrom sklearn.cluster import KMeans\nfrom sklearn.preprocessing import StandardScaler, OneHotEncoder\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import Pipeline\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, silhouette_score\nfrom sklearn.model_selection import train_test_split","metadata":{"_uuid":"8f2839f25d086af736a60e9eeb907d3b93b6e0e5","_cell_guid":"b1076dfc-b9ad-4769-8c92-a6c4dae69d19","execution":{"iopub.status.busy":"2024-05-18T14:01:26.516805Z","iopub.execute_input":"2024-05-18T14:01:26.517952Z","iopub.status.idle":"2024-05-18T14:01:26.525424Z","shell.execute_reply.started":"2024-05-18T14:01:26.517906Z","shell.execute_reply":"2024-05-18T14:01:26.524114Z"},"trusted":true},"execution_count":59,"outputs":[]},{"cell_type":"code","source":"# Load the dataset\ndata = pd.read_csv('/kaggle/input/dog-breeds/breed_traits.csv')","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:01:26.527584Z","iopub.execute_input":"2024-05-18T14:01:26.528209Z","iopub.status.idle":"2024-05-18T14:01:26.550776Z","shell.execute_reply.started":"2024-05-18T14:01:26.528170Z","shell.execute_reply":"2024-05-18T14:01:26.549978Z"},"trusted":true},"execution_count":60,"outputs":[]},{"cell_type":"code","source":"# Defining columns\nnumerical_cols = ['Affectionate With Family', 'Good With Young Children', 'Good With Other Dogs',\n                  'Shedding Level', 'Coat Grooming Frequency', 'Drooling Level',\n                  'Openness To Strangers', 'Playfulness Level', 'Watchdog/Protective Nature',\n                  'Adaptability Level', 'Trainability Level', 'Barking Level',\n                  'Mental Stimulation Needs']\n\ncategorical_cols = ['Coat Type', 'Coat Length']\n\n# Target column\ntarget_col = 'Energy Level'","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:01:26.552352Z","iopub.execute_input":"2024-05-18T14:01:26.553103Z","iopub.status.idle":"2024-05-18T14:01:26.559072Z","shell.execute_reply.started":"2024-05-18T14:01:26.553064Z","shell.execute_reply":"2024-05-18T14:01:26.558247Z"},"trusted":true},"execution_count":61,"outputs":[]},{"cell_type":"code","source":"# Define the features (X) and target (y)\nX = data[numerical_cols + categorical_cols]\ny = data[target_col]","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:01:26.562811Z","iopub.execute_input":"2024-05-18T14:01:26.563228Z","iopub.status.idle":"2024-05-18T14:01:26.569427Z","shell.execute_reply.started":"2024-05-18T14:01:26.563189Z","shell.execute_reply":"2024-05-18T14:01:26.568351Z"},"trusted":true},"execution_count":62,"outputs":[]},{"cell_type":"code","source":"# Split the data into training and testing sets\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:01:26.570819Z","iopub.execute_input":"2024-05-18T14:01:26.571666Z","iopub.status.idle":"2024-05-18T14:01:26.581812Z","shell.execute_reply.started":"2024-05-18T14:01:26.571629Z","shell.execute_reply":"2024-05-18T14:01:26.580782Z"},"trusted":true},"execution_count":63,"outputs":[]},{"cell_type":"code","source":"# Create a preprocessor\npreprocessor = ColumnTransformer(\n    transformers=[\n        ('num', StandardScaler(), numerical_cols),\n        ('cat', OneHotEncoder(), categorical_cols)])","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:01:26.583176Z","iopub.execute_input":"2024-05-18T14:01:26.584076Z","iopub.status.idle":"2024-05-18T14:01:26.588191Z","shell.execute_reply.started":"2024-05-18T14:01:26.584016Z","shell.execute_reply":"2024-05-18T14:01:26.587434Z"},"trusted":true},"execution_count":64,"outputs":[]},{"cell_type":"code","source":"best_score = -1\nbest_num_cl = 2\n\nfor num_cl in range(2, 150):\n\n    # Define the pipeline with preprocessor and KMeans\n    pipeline = Pipeline(steps=[('preprocessor', preprocessor),\n                               ('kmeans', KMeans(n_clusters=num_cl, n_init=10, random_state=42)),\n                               ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])\n\n    # Train the model\n    pipeline.fit(X_train, y_train)\n\n    labels = pipeline.predict(data)\n\n    #Calculate the silhouette score\n    silhouette_avg = silhouette_score(data[numerical_cols], labels)\n    print(\"Silhouette Score:\", silhouette_avg, \"Clusters:\", num_cl)\n    \n    if silhouette_avg > best_score:\n        best_score = silhouette_avg\n        best_num_cl = num_cl","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:08:24.318648Z","iopub.execute_input":"2024-05-18T14:08:24.319090Z","iopub.status.idle":"2024-05-18T14:10:11.113983Z","shell.execute_reply.started":"2024-05-18T14:08:24.319056Z","shell.execute_reply":"2024-05-18T14:10:11.112690Z"},"trusted":true},"execution_count":73,"outputs":[{"name":"stdout","text":"Silhouette Score: -0.2119613069384924 Clusters: 2\nSilhouette Score: -0.23529848613731508 Clusters: 3\nSilhouette Score: -0.24791899449333898 Clusters: 4\nSilhouette Score: -0.24405821537736982 Clusters: 5\nSilhouette Score: -0.2651170196388229 Clusters: 6\nSilhouette Score: -0.2437416908089697 Clusters: 7\nSilhouette Score: -0.2787443913075654 Clusters: 8\nSilhouette Score: -0.24708623191110318 Clusters: 9\nSilhouette Score: -0.24638452072411865 Clusters: 10\nSilhouette Score: -0.234929136883273 Clusters: 11\nSilhouette Score: -0.27745249792546334 Clusters: 12\nSilhouette Score: -0.2536047441604944 Clusters: 13\nSilhouette Score: -0.24935703823806235 Clusters: 14\nSilhouette Score: -0.22072315158891015 Clusters: 15\nSilhouette Score: -0.2503172443704159 Clusters: 16\nSilhouette Score: -0.26153166682977635 Clusters: 17\nSilhouette Score: -0.272831312644882 Clusters: 18\nSilhouette Score: -0.2344692888916233 Clusters: 19\nSilhouette Score: -0.2752168200240517 Clusters: 20\nSilhouette Score: -0.23559437545759976 Clusters: 21\nSilhouette Score: -0.2439666848262976 Clusters: 22\nSilhouette Score: -0.23391321288535363 Clusters: 23\nSilhouette Score: -0.23719430892408058 Clusters: 24\nSilhouette Score: -0.22811402110267626 Clusters: 25\nSilhouette Score: -0.25129577470795494 Clusters: 26\nSilhouette Score: -0.2415218599238954 Clusters: 27\nSilhouette Score: -0.24684535830737434 Clusters: 28\nSilhouette Score: -0.27890411522092573 Clusters: 29\nSilhouette Score: -0.2637046640344505 Clusters: 30\nSilhouette Score: -0.23270948038312944 Clusters: 31\nSilhouette Score: -0.22715883257578817 Clusters: 32\nSilhouette Score: -0.24038618492135458 Clusters: 33\nSilhouette Score: -0.27009188073762663 Clusters: 34\nSilhouette Score: -0.2198640166398637 Clusters: 35\nSilhouette Score: -0.26051874036183215 Clusters: 36\nSilhouette Score: -0.2528949289822978 Clusters: 37\nSilhouette Score: -0.22975087068606395 Clusters: 38\nSilhouette Score: -0.23053739148644398 Clusters: 39\nSilhouette Score: -0.24087593654629663 Clusters: 40\nSilhouette Score: -0.2629540952964097 Clusters: 41\nSilhouette Score: -0.2417285600446344 Clusters: 42\nSilhouette Score: -0.24827304833710942 Clusters: 43\nSilhouette Score: -0.21023987354657905 Clusters: 44\nSilhouette Score: -0.2523578535855983 Clusters: 45\nSilhouette Score: -0.23955597542592333 Clusters: 46\nSilhouette Score: -0.24239535478364788 Clusters: 47\nSilhouette Score: -0.2081157816633226 Clusters: 48\nSilhouette Score: -0.26236642150021405 Clusters: 49\nSilhouette Score: -0.25797227160211567 Clusters: 50\nSilhouette Score: -0.2048868001362245 Clusters: 51\nSilhouette Score: -0.22853072807425467 Clusters: 52\nSilhouette Score: -0.2531425582394824 Clusters: 53\nSilhouette Score: -0.2687562521918243 Clusters: 54\nSilhouette Score: -0.27477037904960894 Clusters: 55\nSilhouette Score: -0.2640766782229016 Clusters: 56\nSilhouette Score: -0.22746645557312767 Clusters: 57\nSilhouette Score: -0.2534541738846173 Clusters: 58\nSilhouette Score: -0.26602172096202015 Clusters: 59\nSilhouette Score: -0.23042097420443117 Clusters: 60\nSilhouette Score: -0.22344907452100107 Clusters: 61\nSilhouette Score: -0.25506004638184365 Clusters: 62\nSilhouette Score: -0.24091470476757698 Clusters: 63\nSilhouette Score: -0.26492874415827283 Clusters: 64\nSilhouette Score: -0.2662338506980749 Clusters: 65\nSilhouette Score: -0.26307437147543883 Clusters: 66\nSilhouette Score: -0.28868791102180225 Clusters: 67\nSilhouette Score: -0.24591244508143612 Clusters: 68\nSilhouette Score: -0.2727865113549403 Clusters: 69\nSilhouette Score: -0.25765338373142643 Clusters: 70\nSilhouette Score: -0.2517369807079026 Clusters: 71\nSilhouette Score: -0.2394234688988616 Clusters: 72\nSilhouette Score: -0.22833427696415867 Clusters: 73\nSilhouette Score: -0.26309989832932956 Clusters: 74\nSilhouette Score: -0.23920959424674676 Clusters: 75\nSilhouette Score: -0.2611340694601389 Clusters: 76\nSilhouette Score: -0.2782526721544649 Clusters: 77\nSilhouette Score: -0.2715174980754006 Clusters: 78\nSilhouette Score: -0.23549662383268744 Clusters: 79\nSilhouette Score: -0.22198738115330205 Clusters: 80\nSilhouette Score: -0.2626818122827653 Clusters: 81\nSilhouette Score: -0.2527047178122927 Clusters: 82\nSilhouette Score: -0.25843856638540996 Clusters: 83\nSilhouette Score: -0.2160165152129404 Clusters: 84\nSilhouette Score: -0.22430943086925992 Clusters: 85\nSilhouette Score: -0.2695195110011979 Clusters: 86\nSilhouette Score: -0.2498908614252414 Clusters: 87\nSilhouette Score: -0.2781357406794013 Clusters: 88\nSilhouette Score: -0.24118411802028436 Clusters: 89\nSilhouette Score: -0.2718698146083075 Clusters: 90\nSilhouette Score: -0.2713492769624056 Clusters: 91\nSilhouette Score: -0.2565251864334283 Clusters: 92\nSilhouette Score: -0.2720672597608646 Clusters: 93\nSilhouette Score: -0.26626171586580644 Clusters: 94\nSilhouette Score: -0.23908259187069628 Clusters: 95\nSilhouette Score: -0.25438095833074015 Clusters: 96\nSilhouette Score: -0.2502064507735272 Clusters: 97\nSilhouette Score: -0.24531838358525296 Clusters: 98\nSilhouette Score: -0.26879502962022717 Clusters: 99\nSilhouette Score: -0.22322098099901092 Clusters: 100\nSilhouette Score: -0.24501442282079486 Clusters: 101\nSilhouette Score: -0.23955475913228383 Clusters: 102\nSilhouette Score: -0.2688866254544674 Clusters: 103\nSilhouette Score: -0.2581796113863844 Clusters: 104\nSilhouette Score: -0.23369929328204758 Clusters: 105\nSilhouette Score: -0.2498153277005578 Clusters: 106\nSilhouette Score: -0.22559832519541415 Clusters: 107\nSilhouette Score: -0.2605513944776098 Clusters: 108\nSilhouette Score: -0.2403391434750696 Clusters: 109\nSilhouette Score: -0.2361611065782238 Clusters: 110\nSilhouette Score: -0.25615384421007975 Clusters: 111\nSilhouette Score: -0.24535511896100246 Clusters: 112\nSilhouette Score: -0.26247782681835774 Clusters: 113\nSilhouette Score: -0.25256204847091895 Clusters: 114\nSilhouette Score: -0.23553293148257518 Clusters: 115\nSilhouette Score: -0.23719495510524327 Clusters: 116\nSilhouette Score: -0.28200637455923666 Clusters: 117\nSilhouette Score: -0.24456420486436126 Clusters: 118\nSilhouette Score: -0.2514574129444545 Clusters: 119\nSilhouette Score: -0.2512643559858337 Clusters: 120\nSilhouette Score: -0.27413196739469814 Clusters: 121\nSilhouette Score: -0.2563668268109035 Clusters: 122\nSilhouette Score: -0.2201822891323025 Clusters: 123\nSilhouette Score: -0.27097173971103866 Clusters: 124\nSilhouette Score: -0.2657131473189401 Clusters: 125\nSilhouette Score: -0.24335957405819608 Clusters: 126\nSilhouette Score: -0.24831999853400458 Clusters: 127\nSilhouette Score: -0.256617840480899 Clusters: 128\nSilhouette Score: -0.2556609697919299 Clusters: 129\nSilhouette Score: -0.26637879674073706 Clusters: 130\nSilhouette Score: -0.2557384989865908 Clusters: 131\nSilhouette Score: -0.25795171621085766 Clusters: 132\nSilhouette Score: -0.24394375083080747 Clusters: 133\nSilhouette Score: -0.24766703087848732 Clusters: 134\nSilhouette Score: -0.24975742285837332 Clusters: 135\nSilhouette Score: -0.28590513355754427 Clusters: 136\nSilhouette Score: -0.26178627245867664 Clusters: 137\nSilhouette Score: -0.24171003127237992 Clusters: 138\nSilhouette Score: -0.2281477803727246 Clusters: 139\nSilhouette Score: -0.2539068733881371 Clusters: 140\nSilhouette Score: -0.2554931779256981 Clusters: 141\nSilhouette Score: -0.2340786648397299 Clusters: 142\nSilhouette Score: -0.24303245981541163 Clusters: 143\nSilhouette Score: -0.26870207468974106 Clusters: 144\nSilhouette Score: -0.2278623199526084 Clusters: 145\nSilhouette Score: -0.26312647567237546 Clusters: 146\nSilhouette Score: -0.24012764305388057 Clusters: 147\nSilhouette Score: -0.2567814303947384 Clusters: 148\nSilhouette Score: -0.25981107712094176 Clusters: 149\n","output_type":"stream"}]},{"cell_type":"code","source":"print(\"Best number of clusters: \", best_num_cl, \" with silhouette of: \", best_score)\n\npipeline = Pipeline(steps=[('preprocessor', preprocessor),\n                            ('kmeans', KMeans(n_clusters=best_num_cl, n_init=10, random_state=42)),\n                            ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])\n\npipeline.fit(X_train, y_train)\n\n# Make predictions on the test set\ny_pred = pipeline.predict(X_test)","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:10:14.009871Z","iopub.execute_input":"2024-05-18T14:10:14.010584Z","iopub.status.idle":"2024-05-18T14:10:14.495476Z","shell.execute_reply.started":"2024-05-18T14:10:14.010549Z","shell.execute_reply":"2024-05-18T14:10:14.494415Z"},"trusted":true},"execution_count":74,"outputs":[{"name":"stdout","text":"Best number of clusters:  51  with silhouette of:  -0.2048868001362245\n","output_type":"stream"}]},{"cell_type":"code","source":"# Evaluate the model\nmae = mean_absolute_error(y_test, y_pred)\nmse = mean_squared_error(y_test, y_pred)\nrmse = mse ** 0.5\n\nprint(\"Mean Absolute Error (MAE):\", mae)\nprint(\"Mean Squared Error (MSE):\", mse)\nprint(\"Root Mean Squared Error (RMSE):\", rmse)","metadata":{"execution":{"iopub.status.busy":"2024-05-18T14:10:17.447937Z","iopub.execute_input":"2024-05-18T14:10:17.448834Z","iopub.status.idle":"2024-05-18T14:10:17.458671Z","shell.execute_reply.started":"2024-05-18T14:10:17.448797Z","shell.execute_reply":"2024-05-18T14:10:17.457093Z"},"trusted":true},"execution_count":75,"outputs":[{"name":"stdout","text":"Mean Absolute Error (MAE): 0.5425641025641025\nMean Squared Error (MSE): 0.4335282051282051\nRoot Mean Squared Error (RMSE): 0.6584285877209503\n","output_type":"stream"}]}]}
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "d1d01ddb",
+   "metadata": {
+    "papermill": {
+     "duration": 0.007484,
+     "end_time": "2024-05-18T14:35:06.916062",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:06.908578",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# KMeans Algorithm\n",
+    "\n",
+    "## Measuring with Silhouette score, MAE, MSE, RMSE."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "9177c8f2",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:06.932462Z",
+     "iopub.status.busy": "2024-05-18T14:35:06.931619Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.380638Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.379257Z"
+    },
+    "papermill": {
+     "duration": 3.460551,
+     "end_time": "2024-05-18T14:35:10.383576",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:06.923025",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# All imports\n",
+    "import pandas as pd\n",
+    "from sklearn.cluster import KMeans, AffinityPropagation\n",
+    "from sklearn.preprocessing import StandardScaler, OneHotEncoder\n",
+    "from sklearn.compose import ColumnTransformer\n",
+    "from sklearn.pipeline import Pipeline\n",
+    "from sklearn.ensemble import RandomForestRegressor\n",
+    "from sklearn.metrics import mean_absolute_error, mean_squared_error, silhouette_score\n",
+    "from sklearn.model_selection import train_test_split"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f768927e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.007009,
+     "end_time": "2024-05-18T14:35:10.397652",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.390643",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Loading the dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "7ea43c33",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.414028Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.413409Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.442215Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.440736Z"
+    },
+    "papermill": {
+     "duration": 0.040533,
+     "end_time": "2024-05-18T14:35:10.444888",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.404355",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "data = pd.read_csv('/kaggle/input/dog-breeds/breed_traits.csv')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e19ac1bf",
+   "metadata": {
+    "papermill": {
+     "duration": 0.006998,
+     "end_time": "2024-05-18T14:35:10.459187",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.452189",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Defining numerical and categorical columns and the target column we are trying to predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "8011563a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.475510Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.474068Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.480787Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.479704Z"
+    },
+    "papermill": {
+     "duration": 0.017813,
+     "end_time": "2024-05-18T14:35:10.483717",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.465904",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "numerical_cols = ['Affectionate With Family', 'Good With Young Children', 'Good With Other Dogs',\n",
+    "                  'Shedding Level', 'Coat Grooming Frequency', 'Drooling Level',\n",
+    "                  'Openness To Strangers', 'Playfulness Level', 'Watchdog/Protective Nature',\n",
+    "                  'Adaptability Level', 'Trainability Level', 'Barking Level',\n",
+    "                  'Mental Stimulation Needs']\n",
+    "\n",
+    "categorical_cols = ['Coat Type', 'Coat Length']\n",
+    "\n",
+    "target_col = 'Energy Level'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e2a191e6",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00703,
+     "end_time": "2024-05-18T14:35:10.497886",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.490856",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Define the features (X) and target (y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "ce325c03",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.514293Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.513816Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.534513Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.533238Z"
+    },
+    "papermill": {
+     "duration": 0.032438,
+     "end_time": "2024-05-18T14:35:10.537606",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.505168",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X = data[numerical_cols + categorical_cols]\n",
+    "y = data[target_col]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f0ed7994",
+   "metadata": {
+    "papermill": {
+     "duration": 0.006488,
+     "end_time": "2024-05-18T14:35:10.551197",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.544709",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Split the data into training and testing sets"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "42bd6a6e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.567358Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.566912Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.579412Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.578172Z"
+    },
+    "papermill": {
+     "duration": 0.0239,
+     "end_time": "2024-05-18T14:35:10.581762",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.557862",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "87163cce",
+   "metadata": {
+    "papermill": {
+     "duration": 0.006354,
+     "end_time": "2024-05-18T14:35:10.594734",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.588380",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Create a preprocessor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "53748397",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.609862Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.609410Z",
+     "iopub.status.idle": "2024-05-18T14:35:10.614718Z",
+     "shell.execute_reply": "2024-05-18T14:35:10.613746Z"
+    },
+    "papermill": {
+     "duration": 0.015735,
+     "end_time": "2024-05-18T14:35:10.617035",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.601300",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "preprocessor = ColumnTransformer(\n",
+    "    transformers=[\n",
+    "        ('num', StandardScaler(), numerical_cols),\n",
+    "        ('cat', OneHotEncoder(), categorical_cols)])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "60bfcabd",
+   "metadata": {
+    "papermill": {
+     "duration": 0.007345,
+     "end_time": "2024-05-18T14:35:10.631007",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.623662",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Measuring the best silhouette score, to find the best number of clusters for this. So far, the best number was 51"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "57985359",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:35:10.647100Z",
+     "iopub.status.busy": "2024-05-18T14:35:10.645674Z",
+     "iopub.status.idle": "2024-05-18T14:37:18.609306Z",
+     "shell.execute_reply": "2024-05-18T14:37:18.607496Z"
+    },
+    "papermill": {
+     "duration": 127.976375,
+     "end_time": "2024-05-18T14:37:18.613963",
+     "exception": false,
+     "start_time": "2024-05-18T14:35:10.637588",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Silhouette Score: -0.2119613069384924 Clusters: 2\n",
+      "Silhouette Score: -0.23529848613731508 Clusters: 3\n",
+      "Silhouette Score: -0.24791899449333898 Clusters: 4\n",
+      "Silhouette Score: -0.24405821537736982 Clusters: 5\n",
+      "Silhouette Score: -0.2651170196388229 Clusters: 6\n",
+      "Silhouette Score: -0.2437416908089697 Clusters: 7\n",
+      "Silhouette Score: -0.2787443913075654 Clusters: 8\n",
+      "Silhouette Score: -0.24708623191110318 Clusters: 9\n",
+      "Silhouette Score: -0.24638452072411865 Clusters: 10\n",
+      "Silhouette Score: -0.234929136883273 Clusters: 11\n",
+      "Silhouette Score: -0.27745249792546334 Clusters: 12\n",
+      "Silhouette Score: -0.2536047441604944 Clusters: 13\n",
+      "Silhouette Score: -0.24935703823806235 Clusters: 14\n",
+      "Silhouette Score: -0.22072315158891015 Clusters: 15\n",
+      "Silhouette Score: -0.2503172443704159 Clusters: 16\n",
+      "Silhouette Score: -0.26153166682977635 Clusters: 17\n",
+      "Silhouette Score: -0.272831312644882 Clusters: 18\n",
+      "Silhouette Score: -0.2344692888916233 Clusters: 19\n",
+      "Silhouette Score: -0.2752168200240517 Clusters: 20\n",
+      "Silhouette Score: -0.23559437545759976 Clusters: 21\n",
+      "Silhouette Score: -0.2439666848262976 Clusters: 22\n",
+      "Silhouette Score: -0.23391321288535363 Clusters: 23\n",
+      "Silhouette Score: -0.23719430892408058 Clusters: 24\n",
+      "Silhouette Score: -0.22811402110267626 Clusters: 25\n",
+      "Silhouette Score: -0.25129577470795494 Clusters: 26\n",
+      "Silhouette Score: -0.2415218599238954 Clusters: 27\n",
+      "Silhouette Score: -0.24684535830737434 Clusters: 28\n",
+      "Silhouette Score: -0.27890411522092573 Clusters: 29\n",
+      "Silhouette Score: -0.2637046640344505 Clusters: 30\n",
+      "Silhouette Score: -0.23270948038312944 Clusters: 31\n",
+      "Silhouette Score: -0.22715883257578817 Clusters: 32\n",
+      "Silhouette Score: -0.24038618492135458 Clusters: 33\n",
+      "Silhouette Score: -0.27009188073762663 Clusters: 34\n",
+      "Silhouette Score: -0.2198640166398637 Clusters: 35\n",
+      "Silhouette Score: -0.26051874036183215 Clusters: 36\n",
+      "Silhouette Score: -0.2528949289822978 Clusters: 37\n",
+      "Silhouette Score: -0.22975087068606395 Clusters: 38\n",
+      "Silhouette Score: -0.23053739148644398 Clusters: 39\n",
+      "Silhouette Score: -0.24087593654629663 Clusters: 40\n",
+      "Silhouette Score: -0.2629540952964097 Clusters: 41\n",
+      "Silhouette Score: -0.2417285600446344 Clusters: 42\n",
+      "Silhouette Score: -0.24827304833710942 Clusters: 43\n",
+      "Silhouette Score: -0.21023987354657905 Clusters: 44\n",
+      "Silhouette Score: -0.2523578535855983 Clusters: 45\n",
+      "Silhouette Score: -0.23955597542592333 Clusters: 46\n",
+      "Silhouette Score: -0.24239535478364788 Clusters: 47\n",
+      "Silhouette Score: -0.2081157816633226 Clusters: 48\n",
+      "Silhouette Score: -0.26236642150021405 Clusters: 49\n",
+      "Silhouette Score: -0.25797227160211567 Clusters: 50\n",
+      "Silhouette Score: -0.2048868001362245 Clusters: 51\n",
+      "Silhouette Score: -0.22853072807425467 Clusters: 52\n",
+      "Silhouette Score: -0.2531425582394824 Clusters: 53\n",
+      "Silhouette Score: -0.2687562521918243 Clusters: 54\n",
+      "Silhouette Score: -0.27477037904960894 Clusters: 55\n",
+      "Silhouette Score: -0.2640766782229016 Clusters: 56\n",
+      "Silhouette Score: -0.22746645557312767 Clusters: 57\n",
+      "Silhouette Score: -0.2534541738846173 Clusters: 58\n",
+      "Silhouette Score: -0.26602172096202015 Clusters: 59\n",
+      "Silhouette Score: -0.23042097420443117 Clusters: 60\n",
+      "Silhouette Score: -0.22344907452100107 Clusters: 61\n",
+      "Silhouette Score: -0.25506004638184365 Clusters: 62\n",
+      "Silhouette Score: -0.24091470476757698 Clusters: 63\n",
+      "Silhouette Score: -0.26492874415827283 Clusters: 64\n",
+      "Silhouette Score: -0.2662338506980749 Clusters: 65\n",
+      "Silhouette Score: -0.26307437147543883 Clusters: 66\n",
+      "Silhouette Score: -0.28868791102180225 Clusters: 67\n",
+      "Silhouette Score: -0.24591244508143612 Clusters: 68\n",
+      "Silhouette Score: -0.2727865113549403 Clusters: 69\n",
+      "Silhouette Score: -0.25765338373142643 Clusters: 70\n",
+      "Silhouette Score: -0.2517369807079026 Clusters: 71\n",
+      "Silhouette Score: -0.2394234688988616 Clusters: 72\n",
+      "Silhouette Score: -0.22833427696415867 Clusters: 73\n",
+      "Silhouette Score: -0.26309989832932956 Clusters: 74\n",
+      "Silhouette Score: -0.23920959424674676 Clusters: 75\n",
+      "Silhouette Score: -0.2611340694601389 Clusters: 76\n",
+      "Silhouette Score: -0.2782526721544649 Clusters: 77\n",
+      "Silhouette Score: -0.2715174980754006 Clusters: 78\n",
+      "Silhouette Score: -0.23549662383268744 Clusters: 79\n",
+      "Silhouette Score: -0.22198738115330205 Clusters: 80\n",
+      "Silhouette Score: -0.2626818122827653 Clusters: 81\n",
+      "Silhouette Score: -0.2527047178122927 Clusters: 82\n",
+      "Silhouette Score: -0.25843856638540996 Clusters: 83\n",
+      "Silhouette Score: -0.2160165152129404 Clusters: 84\n",
+      "Silhouette Score: -0.22430943086925992 Clusters: 85\n",
+      "Silhouette Score: -0.2695195110011979 Clusters: 86\n",
+      "Silhouette Score: -0.2498908614252414 Clusters: 87\n",
+      "Silhouette Score: -0.2781357406794013 Clusters: 88\n",
+      "Silhouette Score: -0.24118411802028436 Clusters: 89\n",
+      "Silhouette Score: -0.2718698146083075 Clusters: 90\n",
+      "Silhouette Score: -0.2713492769624056 Clusters: 91\n",
+      "Silhouette Score: -0.2565251864334283 Clusters: 92\n",
+      "Silhouette Score: -0.2720672597608646 Clusters: 93\n",
+      "Silhouette Score: -0.26626171586580644 Clusters: 94\n",
+      "Silhouette Score: -0.23908259187069628 Clusters: 95\n",
+      "Silhouette Score: -0.25438095833074015 Clusters: 96\n",
+      "Silhouette Score: -0.2502064507735272 Clusters: 97\n",
+      "Silhouette Score: -0.24531838358525296 Clusters: 98\n",
+      "Silhouette Score: -0.26879502962022717 Clusters: 99\n",
+      "Silhouette Score: -0.22322098099901092 Clusters: 100\n",
+      "Silhouette Score: -0.24501442282079486 Clusters: 101\n",
+      "Silhouette Score: -0.23955475913228383 Clusters: 102\n",
+      "Silhouette Score: -0.2688866254544674 Clusters: 103\n",
+      "Silhouette Score: -0.2581796113863844 Clusters: 104\n",
+      "Silhouette Score: -0.23369929328204758 Clusters: 105\n",
+      "Silhouette Score: -0.2498153277005578 Clusters: 106\n",
+      "Silhouette Score: -0.22559832519541415 Clusters: 107\n",
+      "Silhouette Score: -0.2605513944776098 Clusters: 108\n",
+      "Silhouette Score: -0.2403391434750696 Clusters: 109\n",
+      "Silhouette Score: -0.2361611065782238 Clusters: 110\n",
+      "Silhouette Score: -0.25615384421007975 Clusters: 111\n",
+      "Silhouette Score: -0.24535511896100246 Clusters: 112\n",
+      "Silhouette Score: -0.26247782681835774 Clusters: 113\n",
+      "Silhouette Score: -0.25256204847091895 Clusters: 114\n",
+      "Silhouette Score: -0.23553293148257518 Clusters: 115\n",
+      "Silhouette Score: -0.23719495510524327 Clusters: 116\n",
+      "Silhouette Score: -0.28200637455923666 Clusters: 117\n",
+      "Silhouette Score: -0.24456420486436126 Clusters: 118\n",
+      "Silhouette Score: -0.2514574129444545 Clusters: 119\n",
+      "Silhouette Score: -0.2512643559858337 Clusters: 120\n",
+      "Silhouette Score: -0.27413196739469814 Clusters: 121\n",
+      "Silhouette Score: -0.2563668268109035 Clusters: 122\n",
+      "Silhouette Score: -0.2201822891323025 Clusters: 123\n",
+      "Silhouette Score: -0.27097173971103866 Clusters: 124\n",
+      "Silhouette Score: -0.2657131473189401 Clusters: 125\n",
+      "Silhouette Score: -0.24335957405819608 Clusters: 126\n",
+      "Silhouette Score: -0.24831999853400458 Clusters: 127\n",
+      "Silhouette Score: -0.256617840480899 Clusters: 128\n",
+      "Silhouette Score: -0.2556609697919299 Clusters: 129\n",
+      "Silhouette Score: -0.26637879674073706 Clusters: 130\n",
+      "Silhouette Score: -0.2557384989865908 Clusters: 131\n",
+      "Silhouette Score: -0.25795171621085766 Clusters: 132\n",
+      "Silhouette Score: -0.24394375083080747 Clusters: 133\n",
+      "Silhouette Score: -0.24766703087848732 Clusters: 134\n",
+      "Silhouette Score: -0.24975742285837332 Clusters: 135\n",
+      "Silhouette Score: -0.28590513355754427 Clusters: 136\n",
+      "Silhouette Score: -0.26178627245867664 Clusters: 137\n",
+      "Silhouette Score: -0.24171003127237992 Clusters: 138\n",
+      "Silhouette Score: -0.2281477803727246 Clusters: 139\n",
+      "Silhouette Score: -0.2539068733881371 Clusters: 140\n",
+      "Silhouette Score: -0.2554931779256981 Clusters: 141\n",
+      "Silhouette Score: -0.2340786648397299 Clusters: 142\n",
+      "Silhouette Score: -0.24303245981541163 Clusters: 143\n",
+      "Silhouette Score: -0.26870207468974106 Clusters: 144\n",
+      "Silhouette Score: -0.2278623199526084 Clusters: 145\n",
+      "Silhouette Score: -0.26312647567237546 Clusters: 146\n",
+      "Silhouette Score: -0.24012764305388057 Clusters: 147\n",
+      "Silhouette Score: -0.2567814303947384 Clusters: 148\n",
+      "Silhouette Score: -0.25981107712094176 Clusters: 149\n"
+     ]
+    }
+   ],
+   "source": [
+    "best_score = -1\n",
+    "best_num_cl = 2\n",
+    "\n",
+    "for num_cl in range(2, 150):\n",
+    "\n",
+    "    # Define the pipeline with preprocessor and KMeans\n",
+    "    pipeline = Pipeline(steps=[('preprocessor', preprocessor),\n",
+    "                               ('kmeans', KMeans(n_clusters=num_cl, n_init=10, random_state=42)),\n",
+    "                               ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])\n",
+    "\n",
+    "    # Train the model\n",
+    "    pipeline.fit(X_train, y_train)\n",
+    "\n",
+    "    labels = pipeline.predict(data)\n",
+    "\n",
+    "    #Calculate the silhouette score\n",
+    "    silhouette_avg = silhouette_score(data[numerical_cols], labels)\n",
+    "    print(\"Silhouette Score:\", silhouette_avg, \"Clusters:\", num_cl)\n",
+    "    \n",
+    "    if silhouette_avg > best_score:\n",
+    "        best_score = silhouette_avg\n",
+    "        best_num_cl = num_cl"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5074f1d7",
+   "metadata": {
+    "papermill": {
+     "duration": 0.044188,
+     "end_time": "2024-05-18T14:37:18.704187",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:18.659999",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## One final prediction, with the best number of clusters."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "7c234dd1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:37:18.757990Z",
+     "iopub.status.busy": "2024-05-18T14:37:18.757538Z",
+     "iopub.status.idle": "2024-05-18T14:37:19.349406Z",
+     "shell.execute_reply": "2024-05-18T14:37:19.347964Z"
+    },
+    "papermill": {
+     "duration": 0.616967,
+     "end_time": "2024-05-18T14:37:19.352439",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:18.735472",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Best number of clusters:  51  with silhouette of:  -0.2048868001362245\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Best number of clusters: \", best_num_cl, \" with silhouette of: \", best_score)\n",
+    "\n",
+    "pipeline = Pipeline(steps=[('preprocessor', preprocessor),\n",
+    "                            ('kmeans', KMeans(n_clusters=best_num_cl, n_init=10, random_state=42)),\n",
+    "                            ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])\n",
+    "\n",
+    "pipeline.fit(X_train, y_train)\n",
+    "\n",
+    "# Make predictions on the test set\n",
+    "y_pred = pipeline.predict(X_test)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "114aaf4e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.019956,
+     "end_time": "2024-05-18T14:37:19.393991",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:19.374035",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Final model evaluation on RandomForestRegressor model.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "4b180426",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:37:19.438115Z",
+     "iopub.status.busy": "2024-05-18T14:37:19.437697Z",
+     "iopub.status.idle": "2024-05-18T14:37:19.447998Z",
+     "shell.execute_reply": "2024-05-18T14:37:19.446240Z"
+    },
+    "papermill": {
+     "duration": 0.036729,
+     "end_time": "2024-05-18T14:37:19.451060",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:19.414331",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Mean Absolute Error (MAE): 0.5425641025641025\n",
+      "Mean Squared Error (MSE): 0.4335282051282051\n",
+      "Root Mean Squared Error (RMSE): 0.6584285877209503\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Evaluate the model\n",
+    "mae = mean_absolute_error(y_test, y_pred)\n",
+    "mse = mean_squared_error(y_test, y_pred)\n",
+    "rmse = mse ** 0.5\n",
+    "\n",
+    "print(\"Mean Absolute Error (MAE):\", mae)\n",
+    "print(\"Mean Squared Error (MSE):\", mse)\n",
+    "print(\"Root Mean Squared Error (RMSE):\", rmse)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f316e21e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.022035,
+     "end_time": "2024-05-18T14:37:19.495889",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:19.473854",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Affinity Propagation\n",
+    "## Using silhoette as well to find the best damping value"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "5a99e6be",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T14:37:19.540506Z",
+     "iopub.status.busy": "2024-05-18T14:37:19.540081Z",
+     "iopub.status.idle": "2024-05-18T14:37:19.631040Z",
+     "shell.execute_reply": "2024-05-18T14:37:19.629189Z"
+    },
+    "papermill": {
+     "duration": 0.119548,
+     "end_time": "2024-05-18T14:37:19.635867",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:19.516319",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Silhouette Score (Affinity Propagation): 0.08889281001364793\n"
+     ]
+    }
+   ],
+   "source": [
+    "X_train_processed = preprocessor.fit_transform(X_train)\n",
+    "X_test_processed = preprocessor.fit_transform(X_test)\n",
+    "\n",
+    "# Apply Affinity Propagation\n",
+    "affinity_propagation = AffinityPropagation(random_state=42)\n",
+    "\n",
+    "labels = affinity_propagation.fit_predict(X_train_processed)\n",
+    "\n",
+    "\n",
+    "# Calculate silhouette score\n",
+    "silhouette_avg = silhouette_score(X_train_processed, labels)\n",
+    "print(\"Silhouette Score (Affinity Propagation):\", silhouette_avg)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "33ffdfbc",
+   "metadata": {
+    "papermill": {
+     "duration": 0.042855,
+     "end_time": "2024-05-18T14:37:19.724024",
+     "exception": false,
+     "start_time": "2024-05-18T14:37:19.681169",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "datasetId": 3768171,
+     "sourceId": 6518380,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 30698,
+   "isGpuEnabled": false,
+   "isInternetEnabled": false,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 136.912567,
+   "end_time": "2024-05-18T14:37:20.477745",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-05-18T14:35:03.565178",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
